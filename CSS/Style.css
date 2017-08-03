@@ -4,7 +4,7 @@ body
 }
 
 main
-{   
+{
     max-height: 500%;
     max-width: 500%;
     min-width: 100%;
@@ -38,7 +38,7 @@ nav > ul > li ,
     -webkit-flex-direction: column;
         -ms-flex-direction: column;
             flex-direction: column;
-    
+
 }
 
 .error
@@ -50,168 +50,4 @@ nav > ul > li ,
 .hide
 {
     display: none;
-}
-
-.accept,
-.decline
-{
-    width: 75px;
-    height: 25px;
-    background: white;
-    border: 1px solid lightgrey;
-    margin: auto;
-}
-
-.close
-{
-    background-color: red;
-    border-radius: 100%;
-    border: none;
-    margin-left: 5px;
-    width: 12.5px;
-    height: 12.5px;
-}
-
-.dragable-header
-{
-    width: 100%;    
-    background: lightgrey;
-    height: 20px;
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: -webkit-flex;
-    display: flex;
-    -webkit-box-align: center;
-        -ms-flex-align: center;
-            -webkit-align-items: center;
-            align-items: center;
-}
-
-.modal
-{
-    background-color: white;
-    position: fixed;
-    top: 100px;
-    left: 100px;
-    z-index: 2;
-    border: 1px solid lightgrey;
-}
-
-#new-file
-{
-    width: 200px;
-}
-
-#new-file
-{
-    padding: 10px 0px;
-    margin: 20px 10px;
-    
-}
-
-#new-file > div
-{
-    margin: 10px 0px;
-    
-}
-
-#new-file > div input
-{
-    width: 100px;
-    border: none;
-    background-color:white;
-    border-bottom: 1px solid lightgrey;
-}
-
-
-#not-saved
-{
-    
-    width: 500px;
-    height: 100px;
-    padding: 10px;
-    background: white;
-}
-
-#not-saved > p
-{
-    text-align: center;
-}
-
-#not-saved > .row
-{
-    width: 200px;
-    height: 75px;
-    margin: auto;
-    -webkit-box-align: center;
-        -ms-flex-align: center;
-            -webkit-align-items: center;
-            align-items: center;
-}
-
-#not-saved > .row > button
-{
-    margin: auto;
-    width: 75px;
-    height: 25px;
-    border: 1px solid black;
-    background-color: white;
-    
-    
-}
-
-nav
-{   
-    width: auto;
-    height: auto;
-    position: fixed;
-    color: white;
-    top: 0px;
-    left: 0px;
-}
-
-.menu-container > li
-{
-    
-    width: auto;
-    background: black;
-    padding: 10px;
-    
-}
-
-.menu-container
-{
-    
- 
-}
-
-#art-board
-{
-    border: 1px solid black;
-    position: relative;
-    overflow: visible;
-    margin: 100px auto;
-}
-
-#edit-canvas
-{
-    left: 0px;
-    top: 0px;
-    position: absolute;
-}
-
-.coordinate
-{
-    width: 5px;   
-    height: 5px;   
-    border-radius: 100%;
-    background-color: blue;
-    position: absolute;
-}
-
-.coordinate:hover
-{
-    width: 10px;   
-    height: 10px;   
-    background-color: green;
 }
