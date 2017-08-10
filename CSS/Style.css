@@ -14,10 +14,19 @@ main
 
 button,
 nav > ul > li ,
-.dragable-header,
 .close
 {
     cursor: pointer;
+}
+
+.dragable-header
+{
+  cursor: grab;
+}
+
+.dragable-header:active
+{
+  cursor:grabbing;
 }
 
 .row
