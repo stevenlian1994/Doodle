@@ -1,32 +1,32 @@
 body
 {
     font-family: raleway;
+    background-color: lightgrey;
 }
 
 main
 {
-    max-height: 500%;
-    max-width: 500%;
-    min-width: 100%;
-    min-height: 100%;
+    min-width: 100vw;
+    min-height: 100vh;
+    /*! overflow: scroll; */
 }
 
+nav
+{
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    width: 70px;
+    min-height: 40px;
+    background-color: black;
+    color: white;
+    justify-content: center;
+    align-items: center;
+}
 
-button,
-nav > ul > li ,
-.close
+button
 {
     cursor: pointer;
-}
-
-.dragable-header
-{
-  cursor: grab;
-}
-
-.dragable-header:active
-{
-  cursor:grabbing;
 }
 
 .row
@@ -36,6 +36,7 @@ nav > ul > li ,
     display: -webkit-flex;
     display: flex;
 }
+
 .col
 {
     display: -webkit-box;
@@ -59,4 +60,113 @@ nav > ul > li ,
 .hide
 {
     display: none;
+}
+
+
+#art-board-cont
+{
+    min-width: 0px;
+    padding: 50px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    overflow: scroll;
+}
+
+.art-board
+{
+    background-color: white;
+    margin: 25px;
+}
+
+.close
+{
+    border: none;
+    border-radius: 100%;
+    background-color: red;
+    width: 15px;
+    height: 15px;
+    margin:auto 5px;
+}
+
+/************************
+         MODAL
+************************/
+
+
+.modal
+{
+    min-width: 250px;
+    border: 1px solid black;
+    opacity: 1;
+    background-color: white; 
+    position: absolute;
+    top: 100px;
+    left: 100px;
+}
+
+.modal-header
+{
+    background-color: black;
+    width: 100%;
+    height: 25px;
+    align-items: center;
+    justify-content: flex-start;
+    cursor: grab;
+}
+
+.modal-body
+{
+    padding: 20px;
+}
+
+/************************
+         FORMS
+************************/
+.inputs 
+{
+    width: 90%;
+    margin: auto;
+}
+
+.inputs .cont input,.inputs .cont label
+{
+    border: none;
+    margin: auto 2.5px;
+    padding: 2.5px 0px;
+    font-size: 16px;
+    font-family: Raleway;
+    align-items: center;
+}
+
+input
+{
+    min-width: 100px;
+}
+
+.inputs .cont
+{
+    margin: 7.5px auto;
+    position: relative;
+    border-bottom: 1px solid black;
+    width: inherit;
+    height: auto;
+    
+}
+
+
+form .buttons button
+{
+    background-color: black;
+    color: white;
+    border: none;
+    width: auto;
+    height: 24px;
+    margin: auto 5px;
+}
+
+form .buttons
+{
+    justify-content: center;
+    margin: 10px;
 }
