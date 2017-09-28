@@ -45,6 +45,12 @@ $(document).ready(function(e){
                         selector.remove();
                         selector.off('click');
                     }
+                    else if(hasClass('modal-header')){
+                        /*
+                            CREATE A DRAG FUNTIONALITY
+                            TO DRAG THE MODAL AROUND.
+                        */
+                    }
                     else if(hasClass('accept'))
                     {
                         this.exe(e);
@@ -80,7 +86,6 @@ $(document).ready(function(e){
         function Form(){            
             function getData(data){
                 var obj = {};
-
                 for (var i = 0; i < data.length; i++)
                 {
                     obj[data[i].attributes.name.value] = data[i].value;
@@ -92,9 +97,12 @@ $(document).ready(function(e){
                 
                 for(var rule in this.rules)
                 {
-                    if(!this.rules[rule](data))
+                    rule = this.rules[rule](data);
+                   
+                    if(!rule.valid)
                     {
                         valid = false;
+                        this.error.html(rule.error);
                         break;
                     }
                 }
@@ -103,9 +111,12 @@ $(document).ready(function(e){
                 
             };
             return {
-                rules : {},
+                rules : {},       
                 init : function(){
-                    var data = getData(this.get());                    
+                    
+                    this.error.html('');
+                    
+                    var data = getData(this.get);                    
                     
                     if(validate.call(this,data))
                     {
@@ -296,6 +307,7 @@ $(document).ready(function(e){
                 this.layers = new Layers(data)
                 
             }
+            
             function Layer(data){
                 /*
                     Layers is an object that will permit the creation of canvas to append o the current artboar
@@ -331,9 +343,9 @@ $(document).ready(function(e){
                     
                 */  
                 this.counter = 0;
-                this.parent = (function(data){
+                this.parent = function(data){
                     return $('[data-artboard-id="'+data.id+'"]') 
-                }.apply(this,[data]));
+                }.apply(this,[data]);
                 this.width = data.width;
                 this.height = data.height;
                 this.list = [];
@@ -341,7 +353,6 @@ $(document).ready(function(e){
                 this.edit = null;
                 
             }
-            
             
             Layer.prototype.addToDOM = function(){
                 var id = 'data-layer-id="'+this.counter+'"';
@@ -370,17 +381,81 @@ $(document).ready(function(e){
                         return true;
                     }
                     else{
+                        this.current = this.list[layer.index];
                         return false;
                     }
                 }.apply(this,[data]);
-                /* capture the refrence from the begining*/
-                    
-                /*
-                    You need to compete the create function
-                    as wello as the index function that one is suppposed to 
-                    
-                */    
+                
+                this.list.push(layer)
+                   
             }
+            
+            function create(data){
+                
+                    
+                var modal = new Modal();
+                modal.template = function(){
+                    return '<form id="new-art-board">'+
+                                '<div class="inputs col">'+
+                                    '<div class="cont row">'+
+                                        '<label for="width">Width:</label>'+
+                                        '<input type="text" name="width" value="" placeholder="Numbers only">'+
+                                    '</div>'+
+                                    '<div class="cont row">'+  
+                                        '<label for="height">Height:</label>'+
+                                        '<input type="text" name="height" value="" placeholder="Numbers only">'+
+                                    '</div>'+
+                                '</div>'+
+                                '<div class="errors">'+
+                                '</div>'+
+                                '<div class="buttons row">'+
+                                    '<button class="accept" type="button">Done</button>'+
+                                    '<button class="cancel" type="button">Cancel</button>'+
+                                '</div>'+
+                            '</form>';
+                }
+                modal.exe = function(){
+                    
+                    var form = new Form();
+                    form.get = $("#new-art-board input");
+                    form.error = $('#new-art-board .errors');
+                    form.rules['notEmpty'] = function(data){
+                        var response = {valid: true, error: 'Empty'}
+                        for(var value in data)
+                        {
+                            if(data[value] == '' || data[value] == undefined)
+                            {
+                                response.valid = false;
+                                break;
+                            }
+                            
+                        }
+                        
+                        return response; 
+
+                    };
+                    form.rules['NaN'] = function(data){
+                        var response = {valid: true, error: 'Please enter a valid number'};
+                        for(var value in data)
+                        {
+                            if(isNaN(data[value])){
+                                response.valid = false;
+                                break;
+                            }        
+                        }
+                        
+                        return response;
+                    }
+                    form.exe = function(){console.log('wokring')};
+                    
+                    form.init();
+                }
+                modal.init()
+                
+                    
+            }
+            
+            return create
         }
 
        return Artboards();
