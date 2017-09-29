@@ -1,33 +1,23 @@
 $(document).ready(function(e){
     var project = (function(){
+        function drag(init,fin){
+                    $(document).on('mousemove',function(e){
+                        init.exe.apply(init.context,[e]);
+                        $(document).on('mouseup',function(e){
+                            //fin.exe.apply(fin.context,[e]);
+                            $(this).off('mousemove mouseup');
+                        });
+                    });
+                }
+        
         function Modal(){
-            /*
-                this function is set to return a specific 
-                view. 
-                it also will initialize an event to watch for
-                This means that when the modal is prompted there
-                will be events waiting to be captured
-                for example the click 
-                event
-                
-                the modal is a simply a dialogue box with a close button
-                the modal will take 
-                
-                main functions
-                
-                create html view
-                listen for events
-                every event can have custom 
-                events to listen for
-                
-            */
             
             var counter = 0;
             var id = 'data-modal-id="'+String(counter++)+'"';
             
             function events(){
                 var  selector = $('['+id+']');
-                selector.on('click',function(e){
+                selector.on('mousedown',function(e){
                     function hasClass(text){ 
                         
                         if( e.target.className.indexOf(text) != -1)
@@ -43,21 +33,36 @@ $(document).ready(function(e){
                     if(hasClass('close') || hasClass('cancel'))
                     {
                         selector.remove();
-                        selector.off('click');
+                        selector.off('mousedown');
                     }
                     else if(hasClass('modal-header')){
-                        /*
-                            CREATE A DRAG FUNTIONALITY
-                            TO DRAG THE MODAL AROUND.
-                        */
+                        var init = {};
+                        var fin = {} 
+                        init.position = {x: null, y:null};
+                        init.position.x = e.target.parentElement.offsetLeft - e.pageX;
+                        init.position.y = e.target.parentElement.offsetTop - e.pageY;
+                        init.target = $(e.target);
+                        init.context = init;
+                        init.exe = function(e){
+                            this.target.parent().css({
+                                'left':(this.position.x + e.pageX) + 'px',
+                                'top':(this.position.y + e.pageY) + 'px',
+                            });    
+                        }
+                        fin.context = null; 
+                        fin.exe = function(e){
+                            console.log(e)
+                        }
+                        
+                        drag(init,fin)
+                       
                     }
                     else if(hasClass('accept'))
                     {
                         this.exe(e);
                     }
 
-                }.bind(this));
-                    
+                }.bind(this))
             }
             
             function render(){
@@ -282,31 +287,9 @@ $(document).ready(function(e){
                 this means that when creating an artboard it automatically gets intialized with one
                 layer the base layer, each layer will have an id according to each artboard
             */
-            var boardID = 0
-            var boards = {}
-            
-            function Board(data){
-                /*
-                    This board objet allows the creation of 
-                    an object that containts data to refrence
-                    an Artboard. A file can have more than one artboard
-                    therefor this Object will permit the creations of an artboard.
-                    In the essence the board board object is used to create an artboard
-                    this is done by appending it to the the DOM and then adding it to a list.
-                    
-                    The layers object are related directly to its container which is the artboard
-                    when you hover over the artboard we will check the boards for the artboard that 
-                    mactches the artboard ID with this we will then check what is the current artboard 
-                    we are working with. 
-            
-                */
-                this.id = data.id;
-                this.title = data.title
-                this.width = data.width
-                this.height = data.height
-                this.layers = new Layers(data)
-                
-            }
+            var boardCont = $('#art-board-cont');
+            var boardID = 0;
+            var boards = [];
             
             function Layer(data){
                 /*
@@ -390,9 +373,41 @@ $(document).ready(function(e){
                    
             }
             
-            function create(data){
-                
+            function Board(data){
+                /*
+                    This board objet allows the creation of 
+                    an object that containts data to refrence
+                    an Artboard. A file can have more than one artboard
+                    therefor this Object will permit the creations of an artboard.
+                    In the essence the board board object is used to create an artboard
+                    this is done by appending it to the the DOM and then adding it to a list.
                     
+                    The layers object are related directly to its container which is the artboard
+                    when you hover over the artboard we will check the boards for the artboard that 
+                    mactches the artboard ID with this we will then check what is the current artboard 
+                    we are working with. 
+            
+                */
+                boardID++;
+                this.id = boardID;
+                this.title = 'a';
+                this.width = data.width;
+                this.height = data.height;
+                this.layers = new Layer(data);
+            }
+            Board.prototype.index = function(){
+                var size = ' style=" height:'+this.height+'px; width:'+this.width+'px; "'
+                boardCont.append('<div class="art-board"'+size+'data-artboard-id="'+this.id+'"></div>');
+                boards.push({
+                    id : this.id,
+                    title : this.title,
+                    width : this.width,
+                    height : this.height
+                })
+                console.log(boards)
+            }
+
+            function create(data){
                 var modal = new Modal();
                 modal.template = function(){
                     return '<form id="new-art-board">'+
@@ -415,7 +430,6 @@ $(document).ready(function(e){
                             '</form>';
                 }
                 modal.exe = function(){
-                    
                     var form = new Form();
                     form.get = $("#new-art-board input");
                     form.error = $('#new-art-board .errors');
@@ -446,13 +460,14 @@ $(document).ready(function(e){
                         
                         return response;
                     }
-                    form.exe = function(){console.log('wokring')};
+                    form.exe = function(data){
+                        var board = new Board(data);
+                        board.index();
+                    };
                     
                     form.init();
                 }
                 modal.init()
-                
-                    
             }
             
             return create
@@ -466,7 +481,8 @@ $(document).ready(function(e){
 
 
 /*
-    
+ Work on the modal close setting it needs to be a function 
+ that you can call itself, this way you can close it even from outside its scope
     
     
 */
