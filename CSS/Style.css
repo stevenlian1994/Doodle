@@ -77,6 +77,13 @@ button
 {
     background-color: white;
     margin: 25px;
+    position: relative;
+}
+
+.art-board > canvas{
+    position: absolute;
+    top: 0px;
+    left: 0px;
 }
 
 .close

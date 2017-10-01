@@ -15,6 +15,21 @@ $(document).ready(function(e){
             var counter = 0;
             var id = 'data-modal-id="'+String(counter++)+'"';
             
+
+            
+            function render(){
+               var html =   '<div class="modal" '+id+'>'+
+                                '<div class="row modal-header">'+
+                                    '<button class="close" type="button"></button>'+
+                                '</div>'+
+                                '<div class="modal-body">'+   
+                                    this.template() +
+                                '</div>'+
+                            '</div>';
+                
+                $('main').append(html)
+            }
+            
             function events(){
                 var  selector = $('['+id+']');
                 selector.on('mousedown',function(e){
@@ -63,26 +78,15 @@ $(document).ready(function(e){
                     }
 
                 }.bind(this))
-            }
-            
-            function render(){
-               var html =   '<div class="modal" '+id+'>'+
-                                '<div class="row modal-header">'+
-                                    '<button class="close" type="button"></button>'+
-                                '</div>'+
-                                '<div class="modal-body">'+   
-                                    this.template() +
-                                '</div>'+
-                            '</div>';
-                
-                $('main').append(html)
-            }
-            
+            }            
             return {
                 init: function(){                     
                     render.call(this);
                     events.call(this);
-                }      
+                },
+                close: function(){
+                    $('['+id+']').remove()
+                }
             }
             
             
@@ -290,86 +294,72 @@ $(document).ready(function(e){
             var boardCont = $('#art-board-cont');
             var boardID = 0;
             var boards = [];
+            var currentBoard = null;
+            
+            /*
+                A function that is called once, to allow the 
+                ability of listening for the mouseenter event.
+                this will allow us to pick up information of the 
+                current art-board we are on. This data is important
+                as it lets us adress the correct canvas we have to
+                work on and what edit canvas to use.
+            */
+           
+            $('#art-board-cont').on('mouseenter','.art-board',function(e){
+                currentBoard = e.currentTarget.attributes['data-artboard-id'];
+                console.log(currentBoard);
+            });
+            
             
             function Layer(data){
                 /*
-                    Layers is an object that will permit the creation of canvas to append o the current artboar
-                    as well as to delete update and read the canvas inside an artboard
-                    when the Layer object is first initialized you must create two layers force fully 
-                    this Object will return an interface that will allow the artboard to make use of.
-                    
-                    It will be able to reade the 
-                    
-                    object that will be created and only inumerable and numerable items will shopw up
-                    to do this we have to have an edit layer that is a canvas
-                    
-                    A layer is a representation of a canvas the canvas has properties 
-                    like its id
-                    
-                    two layers that store refrence to thier DOM location
-                    
-                    a layer that 
-                    
-                    
-                    ID
-                    TITLE
-                    DOM Refrence
-                    
-                    Create a prototype for the functions all layers will perfom
-                    such as create and deleting a layer and editing
-                    this will mean the functions will need input and not assume data
-                    some animals lay eggs thefore some horses lay egges.
-                    
-                    
-                    Does the c onculsion follow from the premise all horses are animals some animals lay eggs
-                    
-                    
+                    This object will return an interface that will permit
+                    interaction. the interface is based on perfoming basic CRUD
+                    functionality. It permits the creation of layers and stores
+                    their refrence in a list. This is a depandant of the Board 
+                    object.
                 */  
                 this.counter = 0;
                 this.parent = function(data){
                     return $('[data-artboard-id="'+data.id+'"]') 
                 }.apply(this,[data]);
-                this.width = data.width;
                 this.height = data.height;
+                this.width = data.width;
                 this.list = [];
-                this.current = null;
-                this.edit = null;
-                
+           
             }
-            
             Layer.prototype.addToDOM = function(){
                 var id = 'data-layer-id="'+this.counter+'"';
-                var size =  'height="'+this.height+'" width="'+this.width+'"';
+                var size =  'height="'+this.height+'px" width="'+this.width+'px"';
                 var layer = '<canvas '+size+id+'></canvas>';
                 this.parent.prepend(layer);
-            }
-            
-            Layer.prototype.index = function(){
-                this.counter++;
-                this.addToDOM();
                 
-                return this.list.length;
             }
-            
             Layer.prototype.create = function(data){
+                this.addToDOM();
                 var layer = {};
-                layer.index = this.index();
+                layer.index = this.list.length;
                 layer.id = $('[data-layer-id="'+this.counter+'"]');
                 layer.title = function(data){
                     return (data.title ? data.title : 'Untitled-'+this.counter)
                 }.apply(this,[data]);
-                layer.edit = function(data){ 
-                    if(data.edit){
-                        this.edit = layer.id;
-                        return true;
-                    }
-                    else{
-                        this.current = this.list[layer.index];
-                        return false;
-                    }
-                }.apply(this,[data]);
                 
-                this.list.push(layer)
+                
+                if(!data.edit)
+                {
+                    /*
+                        If the object is not edit, add it to our
+                        list of canvas. otherwise don't but add the
+                        refrence of our edeting layer to our Layer object.
+                    */
+                    this.list.push(layer)
+                    this.current = this.list[layer.index];
+                    this.counter++;
+                }
+                else
+                {
+                    this.edit = layer;    
+                }
                    
             }
             
@@ -393,17 +383,27 @@ $(document).ready(function(e){
                 this.title = 'a';
                 this.width = data.width;
                 this.height = data.height;
-                this.layers = new Layer(data);
             }
-            Board.prototype.index = function(){
+            Board.prototype.index = function(data){
                 var size = ' style=" height:'+this.height+'px; width:'+this.width+'px; "'
+                console.log(this.id)
                 boardCont.append('<div class="art-board"'+size+'data-artboard-id="'+this.id+'"></div>');
+                
+                data.id = this.id;
+                
+                this.layers = new Layer(data);
+                
+                this.layers.create({edit:true,title:'EDIT'});
+                this.layers.create(data);
+                
                 boards.push({
                     id : this.id,
                     title : this.title,
                     width : this.width,
-                    height : this.height
+                    height : this.height,
+                    layers: this.layers
                 })
+                
                 console.log(boards)
             }
 
@@ -460,29 +460,47 @@ $(document).ready(function(e){
                         
                         return response;
                     }
+                    form.rules['sizeLimit'] = function(data){
+                        if(Number(data['height']) > 2000 || Number(data['width']) > 2000)
+                        {                                
+                            return {valid: false, error: 'The size limit is 2000px'};
+                        }
+                        
+                        return {valid:true}
+                    }
                     form.exe = function(data){
                         var board = new Board(data);
-                        board.index();
+                        board.index(data);
+                        modal.close();
+                         
                     };
                     
                     form.init();
+                    
                 }
                 modal.init()
             }
             
-            return create
+            return {create: create}
         }
 
-       return Artboards();
+        /* return objects*/
+       return {
+           ArtBoard: Artboards() 
+       };
         
     }());
-    project();
+    
+    
+    
+    $('nav').on('click',function(){
+                
+    project.ArtBoard.create();            
+    })
 });
 
 
 /*
- Work on the modal close setting it needs to be a function 
- that you can call itself, this way you can close it even from outside its scope
-    
+ You need to work on how you are creating the layers and how thier id are going to be incremented
     
 */
