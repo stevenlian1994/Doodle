@@ -10,9 +10,8 @@ $(document).ready(function(e){
                     });
                 }
         
-        function Modal(){
-            var counter = 0;
-            var id = 'data-modal-id="'+String(counter++)+'"';
+        function Modal(id){
+            var id = 'data-modal-id="'+id+'"';
             function render(){
                var html =   '<div class="modal" '+id+'>'+
                                 '<div class="row modal-header">'+
@@ -69,8 +68,10 @@ $(document).ready(function(e){
 
                 }.bind(this))
             }
+            
             return {
                 init: function(){
+                    $('['+id+']').remove();
                     render.call(this);
                     events.call(this);
                 },
@@ -105,7 +106,6 @@ $(document).ready(function(e){
                 }
                 
                 return valid;
-                
             };
             return {
                 rules : {},
@@ -135,6 +135,72 @@ $(document).ready(function(e){
             };
         }
         
+        var History = function(){
+            /*
+                The history object is in charge of recording data for each interaction the 
+                canvas has. This will allow us to record user interactions, store them to be used 
+                later. Each item stored must be a procedince of Tools object. 
+                
+                Each object stored must have the following data.
+
+                refrence to layer -> layer id
+                refrence to artboard -> artboard id
+                Type of tool - > string
+                Tools Data ->  data 
+                
+                this is done through a collect function 
+                
+                The objects will be kept inside an array.
+                we will have a tmp list and a current list
+                the tmp list will be used for corrections
+                
+                The interface that this object will permit us 
+                to add and remove objects from a list.
+                
+                Each object will have its on unique data
+                the History object only cares about keeping an
+                index in the order they were created and modified.
+                the data of the actual object is for the the object being
+                stored.
+                
+                this means that its only priority will be adding and creating 
+                index list of object also creating a sorted list of all the tools
+                on the fly.
+            */
+            
+            var list = [];
+            var tmp = [];
+            function clone(data){ 
+                var obj = {};
+                for(var value in data)
+                {
+                    obj[value] = data[value];
+                }
+
+                return obj;
+                    
+            };
+            
+           
+            
+            
+            return {
+                add: function(data){
+                    list.push({
+                    artboard: data.artboard,
+                    canvas: clone(data.canvas),
+                    position: clone(data.position)
+                          });
+                    console.log(list)
+                },
+                
+                remove: function(){
+                tmp.push(list.pop());
+            },
+                
+            }
+        }();
+        
         var Tools = function(){
             var canvas  = {};
             var artboard = null;
@@ -143,33 +209,17 @@ $(document).ready(function(e){
                 canvas.current = data.current.id[0].getContext('2d');
                 canvas.edit = data.edit.id[0].getContext('2d');        
             }
-            /*
-                This object must be accountable for the knowing the
-                current canvas we are working for. this will be achieved
-                with recieving an input. this will have a current property.
-                the property will be private and can only be modified via its interface
-                
-                this is how this object will keep track of the artboard and its layers. more than
-                anything layers
-                
-                
-                this will affect the the current object because it will now have to refor to a var canvas
-                
-                the canvas and artboard for each will be added on the fly and terminated as soon as the mouse leaves
-                
-                Tools object itself will have a init function that will allow the Object to init the necessary events for
-                the current tool
-                
-            */
             var Tool = {
                 drag: drag,
                 coordinate: {
                     plot: function(data){
-                       
-                        data.x = data.x - 2;
-                        data.y = data.y - 2;
-                        var position = 'left:'+(data.x)+'px; top:'+(data.y)+'px;';
-                        var attr = 'data-x="'+(data.x)+'" data-y="'+(data.y)+'"';
+                        /*
+                            we have to subtract 2 pixels so the div can be 
+                            centered. Since the total width is 5 and the pointer uses
+                            a squares corner as the click area.
+                        */
+                        var position = 'left:'+(data.x - 2)+'px; top:'+(data.y - 2)+'px;';
+                        var attr = 'data-x="'+(data.x - 2)+'" data-y="'+(data.y - 2)+'"';
                         var div = '<div class="coordinate" '+attr+' style="'+position+'"></div>';
 
                         artboard.append(div);
@@ -178,14 +228,12 @@ $(document).ready(function(e){
                         if(toggle)
                         {
                             artboard.on('mouseenter','.coordinate',function(e){
-
                                 e = $(e.target);
                                 var left = Number(e.attr('data-x')) - 3;
                                 var top = Number(e.attr('data-y')) - 3;
                                 e.css({'left': left +'px',
                                         'top': top +'px'
                                       });
-
                                 artboard.on('mouseleave','.coordinate',function(e){
                                   left += 3;
                                   top +=  3;
@@ -226,55 +274,61 @@ $(document).ready(function(e){
                 };
                 this.init = function(data){
                     context(data);
-                    this.coordinate.hover(data,true)                    
-            
-                    artboard.on('click',function(e){
-                        var data = {}, y = null, x = null;
-                        
-                       ( $(e.target).hasClass('coordinate') ? 
-                        
-                        (
-                           x = Number($(e.target).attr('data-x')) + 2 ,
-                           y = Number($(e.target).attr('data-y')) + 2
-                          
-                        ) 
-                        
-                        :
-                        
-                        ( x = e.offsetX, y = e.offsetY, data.plot = true)
-                        
-                       );
-                    
-                        data.x = x;
-                        data.y = y;
-                        data.isFirst = true;
-                        data.event = e;
-                        
-                        if(this.position.x1 === null)
-                        {
-                            this.position.x1 = x;
-                            this.position.y1 = y;
+                    this.coordinate.hover(data,true);
+                    artboard.on('mousedown',function(e){
+                        var data = {};
+                        if(e.originalEvent.detail == 2){
+                            this.position.x1 = null;
+                            this.position.y1 = null;
+                            this.position.x2 = null;
+                            this.position.y2 = null;
                         }
                         else
                         {
-                            this.position.x2 = x;
-                            this.position.y2 = y;
-                            data.isFirst = false;
+                            ($(e.target).hasClass('coordinate') ? 
+
+                                (
+                                    data.x = Number($(e.target).attr('data-x')) + 2 ,
+                                    data.y = Number($(e.target).attr('data-y')) + 2,
+                                    data.plot = false
+
+                                ) 
+
+                                :
+
+                                ( data.x = e.offsetX, data.y = e.offsetY, data.plot = true)
+
+                            );
+
+                            data.isFirst = true;
+                            data.event = e;
+
+                            if(this.position.x1 == null)
+                            {
+                                this.position.x1 = data.x;
+                                this.position.y1 = data.y;
+                            }
+                            else
+                            {
+                                this.position.x2 = data.x;
+                                this.position.y2 = data.y;
+                                data.isFirst = false;
+                            }
+
+                            this.exe(data);
                         }
-                        
-                        this.exe(data);
-                        
                     }.bind(this));
+                    
                 }
                 this.fin = function(){
                     this.coordinate.hover(false);
-                    artboard.off('click')
+                    artboard.off('mousedown')
                 }
                 
             }
             Line.prototype = Object.create(Tool);
-            Line.prototype.draw =  function(data){
-                
+            Line.prototype.draw =  function(){
+                // this loop adds all config to the canvas
                 for(var setting in this.settings)
                 {
                     canvas[setting] = this.settings[setting];
@@ -282,8 +336,8 @@ $(document).ready(function(e){
                 canvas.edit.beginPath();
                 canvas.edit.moveTo(this.position.x1,this.position.y1);
                 canvas.edit.lineTo(this.position.x2,this.position.y2);
-                canvas.edit.closePath();
                 canvas.edit.stroke();
+             
             }
                     
             
@@ -295,24 +349,30 @@ $(document).ready(function(e){
             line.exe = function(data){
                 if(data.plot)
                 {
-                    this.coordinate.plot(data);
+                   this.coordinate.plot(data);
                 }
                 if(!data.isFirst){
+                    History.add({
+                        artboard:artboard,
+                        canvas: canvas,
+                        position: this.position,
+                        settings: this.settings
+                    });
                     this.draw()
+                    this.position.x1 = data.x;
+                    this.position.y1 = data.y;
                 }
+                
             }
 
             return {'line':line};
         }();
-        
-        
-        
+         
         var Artboards = function(){
            
             var boardCont = $('#art-board-cont');
             var boardID = 0;
-            var boards = {};
-            
+            var boards = {};            
             
             /*
                 A function that is called once, to allow the
@@ -326,7 +386,9 @@ $(document).ready(function(e){
             $('#art-board-cont').on('mouseenter','.art-board',function(e){
                 var currentBoard = 'artboard-'+String(e.currentTarget.attributes['data-artboard-id'].value);                    
                 Tools.line.init(boards[currentBoard].layers)
-                
+                $(this).on('mouseleave',function(e){
+                   Tools.line.fin();
+                })
             });
             
             function Layer(data){
@@ -434,7 +496,7 @@ $(document).ready(function(e){
             }
 
             function create(data){
-                var modal = new Modal();
+                var modal = new Modal('new-art-board');
                 modal.template = function(){
                     return '<form id="new-art-board">'+
                                 '<div class="inputs col">'+
@@ -506,11 +568,13 @@ $(document).ready(function(e){
                 modal.init()
             }
             
-            return {create: create}
+            return {
+                create: create
+            }
+        
         }
-
-        /* return objects*/
-       return {
+       
+        return {
            ArtBoard: Artboards()
        };
         
@@ -524,14 +588,14 @@ $(document).ready(function(e){
 
 
 /*
-    AS OF RIGHT NOW THE ARTBOARD OBJECT AND THE LAYERS ARE WORKING 
-    WE MODIFIED THE LAYERS AND ARTBOARDS LIST TO BE AN OBJECT
-    THIS WAY WE CAN MAP EACH ARTBOARD WITH A UNIQUE ID AND NO HAVE TO LOOP
-    THROUGH AN ARRAY TO FIND OUR ARTBOARD. RIGHT NOW YOU ARE WOKRIN ON
-    THE DRAW FUNCTION FOR THE LINE YOU WILL ALSO NEED TO WORK ON THE TOOOLS 
-    OBJECT TO CREATE A FIN AND INIT FUNCTION FOR OVERALL THIS OBJECT NEEDS TO 
-    GIVE TOOLS AS AN INTERFACE AND TOOLS WILL BE APLLIED TO DIFFERENT CONTEXT 
-    WTIH A FUNCTION THAT CHANGES ITS CANVAS AND ARTBOARD CONTEXT WITH THE RECEIVEING 
-    INPUT OF THE ARTBOARD MOUSE ENTER LISTENER.
+*****************************
+         TODO LIST
+*****************************.
+
+- CREATE A WAY TO HIDE AND SHOW ALL THE COORDINATES IN THAT ARTBOARD 
+
+- 
+
+*****************************
     
 */
