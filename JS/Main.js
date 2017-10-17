@@ -136,38 +136,6 @@ $(document).ready(function(e){
         }
         
         var History = function(){
-            /*
-                The history object is in charge of recording data for each interaction the 
-                canvas has. This will allow us to record user interactions, store them to be used 
-                later. Each item stored must be a procedince of Tools object. 
-                
-                Each object stored must have the following data.
-
-                refrence to layer -> layer id
-                refrence to artboard -> artboard id
-                Type of tool - > string
-                Tools Data ->  data 
-                
-                this is done through a collect function 
-                
-                The objects will be kept inside an array.
-                we will have a tmp list and a current list
-                the tmp list will be used for corrections
-                
-                The interface that this object will permit us 
-                to add and remove objects from a list.
-                
-                Each object will have its on unique data
-                the History object only cares about keeping an
-                index in the order they were created and modified.
-                the data of the actual object is for the the object being
-                stored.
-                
-                this means that its only priority will be adding and creating 
-                index list of object also creating a sorted list of all the tools
-                on the fly.
-            */
-            
             var list = [];
             var tmp = [];
             function clone(data){ 
@@ -179,78 +147,116 @@ $(document).ready(function(e){
 
                 return obj;
                     
-            };
-            
-           
-            
-            
+            };            
             return {
                 add: function(data){
                     list.push({
-                    artboard: data.artboard,
-                    canvas: clone(data.canvas),
-                    position: clone(data.position)
-                          });
+                        type: data.type,
+                        artboard: data.artboard,
+                        canvas: clone(data.canvas),
+                        position: clone(data.position)      
+                    });
                     console.log(list)
-                },
-                
-                remove: function(){
-                tmp.push(list.pop());
+                },                
+                remove: function(tools){
+                    
+                    tmp.push(list.pop());
+                    tools.clear.draw();
+                    list.forEach(function(obj){
+                        tools[obj.type].draw(obj);
+                    });
             },
-                
             }
         }();
         
         var Tools = function(){
             var canvas  = {};
             var artboard = null;
+            var currentTool = 'line';
+            var Tools = {};
+            
             function context(data){
-                artboard = data.board;
+                artboard = data.artboard;
                 canvas.current = data.current.id[0].getContext('2d');
                 canvas.edit = data.edit.id[0].getContext('2d');        
             }
-            var Tool = {
+            function init(data){
+                context(data);
+                Tools[currentTool].init()
+            }
+            
+            function fin(data)
+            {
+                Tools[currentTool].fin()
+            }
+            
+            var ToolsProto = {
                 drag: drag,
-                coordinate: {
-                    plot: function(data){
-                        /*
-                            we have to subtract 2 pixels so the div can be 
-                            centered. Since the total width is 5 and the pointer uses
-                            a squares corner as the click area.
-                        */
-                        var position = 'left:'+(data.x - 2)+'px; top:'+(data.y - 2)+'px;';
-                        var attr = 'data-x="'+(data.x - 2)+'" data-y="'+(data.y - 2)+'"';
-                        var div = '<div class="coordinate" '+attr+' style="'+position+'"></div>';
+                coordinate: function(){
+                    var counter = 0;
+                    return{
+                        plot: function(data){
+                            /*
+                                we have to subtract 2 pixels so the div can be 
+                                centered. Since the total width is 5 and the pointer uses
+                                a squares corner as the click area.
+                            */
+                            var position = 'left:'+(data.x - 2)+'px; top:'+(data.y - 2)+'px;';
+                            var attr = 'data-x="'+(data.x - 2)+'" data-y="'+(data.y - 2)+'" data-coordinate-id="'+(counter++)+'"';
+                            var div = '<div class="coordinate" '+attr+' style="'+position+'"></div>';
 
-                        artboard.append(div);
-                    },
-                    hover: function(toggle){
-                        if(toggle)
-                        {
-                            artboard.on('mouseenter','.coordinate',function(e){
-                                e = $(e.target);
-                                var left = Number(e.attr('data-x')) - 3;
-                                var top = Number(e.attr('data-y')) - 3;
-                                e.css({'left': left +'px',
-                                        'top': top +'px'
-                                      });
-                                artboard.on('mouseleave','.coordinate',function(e){
-                                  left += 3;
-                                  top +=  3;
-                                  $(this).css({'left': left+'px',
-                                        'top': top+'px'
-                                      });
-                                  $(this).off('mouseleave');
+                            artboard.append(div);
+                        },
+                        hover: function(toggle){
+                            if(toggle)
+                            {
+                                artboard.on('mouseenter','.coordinate',function(e){
+                                    e = $(e.target);
+                                    var left = Number(e.attr('data-x')) - 3;
+                                    var top = Number(e.attr('data-y')) - 3;
+                                    e.css({'left': left +'px',
+                                            'top': top +'px'
+                                          });
+                                    artboard.on('mouseleave','.coordinate',function(e){
+                                      left += 3;
+                                      top +=  3;
+                                      $(this).css({'left': left+'px',
+                                            'top': top+'px'
+                                          });
+                                      $(this).off('mouseleave');
+                                    });
+
                                 });
+                            }
+                            else
+                            {
+                                artboard.off('mouseenter mouseleave','.coordinate');
+                            }
+                        },
+                        show: function(toogle){
+                            if(toogle){
+                                $(document).on('keydown.coordinate',function(e){
+                                    var coordinates = artboard.children('.coordinate');
+                                    
+                                    if(e.originalEvent.key === "T"){
+                                        if(coordinates.hasClass('hide'))
+                                        {
+                                            coordinates.removeClass('hide');
+                                        }
+                                        else
+                                        {
+                                            coordinates.addClass('hide');
+                                        }
 
-                            });
-                        }
-                        else
-                        {
-                            artboard.off('mouseenter mouseleave','.coordinate');
+                                    }
+                                });
+                            }
+                            else{
+                                $(document).off('keydown.coordinate');
+                            }
                         }
                     }
-                },
+                }(),
                 settings: {
                     fillStyle: 'rgba(0,0,0,1)',
                     strokeStyle: 'rgba(0,0,0,1)',
@@ -263,6 +269,22 @@ $(document).ready(function(e){
                 }
             }
             
+            $(document).on('keydown',function(e){
+                if(e.originalEvent.key == 'z')
+                {
+                    History.remove(Tools);
+                    
+                }
+            })
+            /*
+                in order to undo we must remove the last
+                object appended to the history object.
+                this object will then be placed on the tmp array
+                this is done incase we want to use it again. 
+                
+                once the object is removed we must redraw the canvas again.
+            */
+            
             /**************************************
                         CONSTRUCTORS
             ***************************************/
@@ -272,16 +294,15 @@ $(document).ready(function(e){
                 this.position = {
                     x1: null, x2: null, y1: null, y2: null
                 };
-                this.init = function(data){
-                    context(data);
-                    this.coordinate.hover(data,true);
+                this.init = function(){
+                    this.coordinate.hover(true);
+                    this.coordinate.show(true)
                     artboard.on('mousedown',function(e){
                         var data = {};
+                        
                         if(e.originalEvent.detail == 2){
-                            this.position.x1 = null;
-                            this.position.y1 = null;
-                            this.position.x2 = null;
-                            this.position.y2 = null;
+                            this.clearPosition();
+                            data.plot = false;
                         }
                         else
                         {
@@ -291,7 +312,6 @@ $(document).ready(function(e){
                                     data.x = Number($(e.target).attr('data-x')) + 2 ,
                                     data.y = Number($(e.target).attr('data-y')) + 2,
                                     data.plot = false
-
                                 ) 
 
                                 :
@@ -317,26 +337,38 @@ $(document).ready(function(e){
 
                             this.exe(data);
                         }
+                        
                     }.bind(this));
                     
                 }
                 this.fin = function(){
                     this.coordinate.hover(false);
-                    artboard.off('mousedown')
-                }
-                
+                    this.clearPosition();
+                    this.coordinate.show(false);
+                    artboard.off('mousedown');
+                }  
             }
-            Line.prototype = Object.create(Tool);
-            Line.prototype.draw =  function(){
+            Line.prototype = Object.create(ToolsProto);
+            Line.prototype.clearPosition = function(){
+                this.position =  {
+                    x1: null, x2: null, y1: null, y2: null
+                };
+            }
+            Line.prototype.draw =  function(config){
                 // this loop adds all config to the canvas
-                for(var setting in this.settings)
-                {
-                    canvas[setting] = this.settings[setting];
+                
+                var context = (config ? config.canvas.current : canvas.current );
+                var position = (config ? config.position : this.position);
+                if(config == undefined){
+                    for(var setting in this.settings)
+                    {
+                        context[setting] = this.settings[setting];
+                    }
                 }
-                canvas.edit.beginPath();
-                canvas.edit.moveTo(this.position.x1,this.position.y1);
-                canvas.edit.lineTo(this.position.x2,this.position.y2);
-                canvas.edit.stroke();
+                context.beginPath();
+                context.moveTo(position.x1,position.y1);
+                context.lineTo(position.x2,position.y2);
+                context.stroke();
              
             }
                     
@@ -353,10 +385,10 @@ $(document).ready(function(e){
                 }
                 if(!data.isFirst){
                     History.add({
+                        type: this.type,
                         artboard:artboard,
                         canvas: canvas,
-                        position: this.position,
-                        settings: this.settings
+                        position: this.position    
                     });
                     this.draw()
                     this.position.x1 = data.x;
@@ -364,8 +396,43 @@ $(document).ready(function(e){
                 }
                 
             }
+            
+            var clear = new Object();
+            clear.draw = function(config){
+                /*
+                    this function clears a specific canvas
+                    this means thatt is has to know what context its going to worki wihtr
+                    this is done by 
+                    
+                    THERE IS A BUG IN THE PROGRRAM WHEN CLEARING IT WILL CLEAR ALL THE WORKING CANVAS 
+                    BUT WHEN IT REDRAWS EVERYTHIGN IT WILL DRAW ALL THE OBJECTS IT ONLY NEEDS TO DRAW THE ONE
+                    FOR THE CURRENT WORKING ART BOARD THIS MEAN THAT YOU WILL NEED TO SORT HOW THE HISTORY OBJECT
+                    OR HAVE THE HISTORY OBJECT SORT ITS SELF ON THE FLY
+                */
+                
+                var context = (config ? config.canvas.current : canvas.current );
 
-            return {'line':line};
+                context.clearRect(0,0,context.canvas.width, context.canvas.height);
+            }
+            
+            /**************************************
+                    STORE INSTANCES PRIVATELY
+            ***************************************/
+            
+            Tools['line'] = line;
+            Tools['clear'] = clear;
+           
+            
+            
+            /**************************************
+                        FINAL INTERFACE        
+            **************************************/
+            
+            return {
+                init: init,
+                fin: fin
+            };
+            
         }();
          
         var Artboards = function(){
@@ -385,9 +452,9 @@ $(document).ready(function(e){
            
             $('#art-board-cont').on('mouseenter','.art-board',function(e){
                 var currentBoard = 'artboard-'+String(e.currentTarget.attributes['data-artboard-id'].value);                    
-                Tools.line.init(boards[currentBoard].layers)
+                Tools.init(boards[currentBoard].layers)
                 $(this).on('mouseleave',function(e){
-                   Tools.line.fin();
+                   Tools.fin();
                 })
             });
             
@@ -400,7 +467,7 @@ $(document).ready(function(e){
                         object.
                     */
                     this.counter = 0;
-                    this.board = function(data){
+                    this.artboard = function(data){
                         return $('[data-artboard-id="'+data.id+'"]')
                     }.apply(this,[data]);
                     this.height = data.height;
@@ -413,7 +480,7 @@ $(document).ready(function(e){
                 var id = 'data-layer-id="'+this.counter+'"';
                 var size =  'height="'+this.height+'px" width="'+this.width+'px"';
                 var layer = '<canvas '+size+id+'></canvas>';
-                this.board.prepend(layer);
+                this.artboard.prepend(layer);
                 
             }
             Layer.prototype.create = function(data){
@@ -423,7 +490,7 @@ $(document).ready(function(e){
                   return 'layer-'+this.counter
                 }.apply(this);
                 layer.id = function(){
-                  return $(this.board).children('[data-layer-id="'+this.counter+'"]');
+                  return $(this.artboard).children('[data-layer-id="'+this.counter+'"]');
                 }.apply(this);
                 layer.title = function(data){
                     return (data.title ? data.title : 'Untitled-'+this.counter)
@@ -590,11 +657,13 @@ $(document).ready(function(e){
 /*
 *****************************
          TODO LIST
-*****************************.
+*****************************
+- CREATE THE INTERFACE FOR THE UNDO AND REDO AND ITS FUNCTIONS.
 
-- CREATE A WAY TO HIDE AND SHOW ALL THE COORDINATES IN THAT ARTBOARD 
+- CREATE A RELATIONSHIP BETWEEN THE COORDINATES AND ITS OBJECT THIS WAY IT CAN EASLY BE MODIFIED 
+  WHEN WE NEED TO DELETE A GIVEN POINT,
 
-- 
+- FIX THE BUG THAT IS LEAVING BLANK COORDINATES WHEN LEAVING
 
 *****************************
     
