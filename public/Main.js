@@ -1,5 +1,3 @@
-var $ = require("jquery");
-
 $(document).ready(function(e){
     var project = (function(){
         function drag(init,fin){
@@ -131,7 +129,7 @@ $(document).ready(function(e){
                         }
                         
                         return false;
-                    }
+                    };
                     
                 }
             };
